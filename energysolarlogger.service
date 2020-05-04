@@ -1,0 +1,11 @@
+[Unit]
+Description=EnergySolarLogger
+
+[Service]
+Type=notify
+WorkingDirectory=/opt/energysolarlogger
+ExecStart=/opt/energysolarlogger/EnergySolarLogger
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
