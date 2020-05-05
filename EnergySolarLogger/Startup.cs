@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using InfluxDB.Collector;
 using Microsoft.AspNetCore.Builder;
@@ -15,6 +16,7 @@ namespace EnergySolarLogger
     public class Startup
     {
         private SolarMaxCollector _solarmaxCollector;
+        private static Timer _solarStatsTimer;
         private readonly Dictionary<string, string> _queryStringToMeasurementMapping = new Dictionary<string, string>()
         {
             { "u", "totalEnergyUsed" },
@@ -34,7 +36,7 @@ namespace EnergySolarLogger
                 .CreateCollector();
 
             _solarmaxCollector = new SolarMaxCollector(Environment.GetEnvironmentVariable("SOLARMAX_IP"), int.Parse(Environment.GetEnvironmentVariable("SOLARMAX_PORT")));
-            var timer = new System.Threading.Timer(o => CollectSolarStats(), null, 0, 30000);
+            _solarStatsTimer = new Timer(o => CollectSolarStats(), null, 0, 30000);
         }
 
         private void CollectSolarStats()
