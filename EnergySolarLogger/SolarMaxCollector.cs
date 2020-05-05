@@ -19,66 +19,22 @@ namespace EnergySolarLogger
             _port = port;
         }
 
-        public Dictionary<string, int> SendMessage(string[] cmds)
+        public SolarMaxResponse SendMessage(SolarMaxMessage message)
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            socket.SendTimeout = 1000;
+            socket.ReceiveTimeout = 1000;
 
             socket.Connect(_host, _port);
-            socket.Send(Encoding.ASCII.GetBytes(GenerateMessage(cmds)));
+            socket.Send(message.ToBytes());
 
             var receiveBuffer = new byte[999];
             socket.Receive(receiveBuffer);
             socket.Close();
 
-            return DecodeResponse(Encoding.ASCII.GetString(receiveBuffer));
+            return new SolarMaxResponse(receiveBuffer);
         }
 
-        public int GenerateChecksum(string msg)
-        {
-            var msgbytes = Encoding.ASCII.GetBytes(msg);
-            int sum = 0;
-            foreach (var b in msgbytes)
-		    {
-			    sum += b;
-                sum = (int) (sum % Math.Pow(2, 16));
-            }
-            return sum;
-        }
 
-        public string GenerateMessage(string[] cmds)
-        {
-            var src = "FB";
-            var dst = "00";
-            var len = "00";
-            var tmpcs = "0000";
-
-            var msg = $"64:{string.Join(';', cmds)}";
-
-            var lenstr = $"{{{src};{dst};{len}|{msg}|{tmpcs}}}";
-            var lenhex = $"{lenstr.Length:X2}";
-
-
-            var checkSum = $"{src};{dst};{lenhex}|{msg}|";
-            var cs = GenerateChecksum(checkSum);
-            var cshex = $"{cs:X4}";
-
-            return $"{{{src};{dst};{lenhex}|{msg}|{cshex}}}";
-        }
-
-        public Dictionary<string, int> DecodeResponse(string response)
-        {
-            var dic = new Dictionary<string, int>();
-
-            var rx = new Regex(@"\:(.*)\|");
-            var es = rx.Match(response).Groups[1].Value;
-
-            foreach(var cmd in es.Split(';'))
-            {
-                var keyvalue = cmd.Split('=');
-                dic.Add(keyvalue[0], Convert.ToInt32(keyvalue[1], 16));
-            }
-
-            return dic;
-        }
     }
 }

@@ -5,8 +5,6 @@ VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnergySolarLogger", "EnergySolarLogger\EnergySolarLogger.csproj", "{3A98249B-9954-4E4A-92D2-776E7715860D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EnergySolarLogger.Tests", "EnergySolarLogger.Tests\EnergySolarLogger.Tests.csproj", "{473183FD-AA24-45DF-A9F0-88806553B1AA}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{3A98249B-9954-4E4A-92D2-776E7715860D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A98249B-9954-4E4A-92D2-776E7715860D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A98249B-9954-4E4A-92D2-776E7715860D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{473183FD-AA24-45DF-A9F0-88806553B1AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{473183FD-AA24-45DF-A9F0-88806553B1AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{473183FD-AA24-45DF-A9F0-88806553B1AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{473183FD-AA24-45DF-A9F0-88806553B1AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

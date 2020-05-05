@@ -6,6 +6,10 @@ Type=notify
 WorkingDirectory=/opt/energysolarlogger
 ExecStart=/opt/energysolarlogger/EnergySolarLogger
 Restart=always
+Environment="INFLUX_ADDRESS=http://localhost:8086"
+Environment="INFLUX_DB=energysolar"
+Environment="SOLARMAX_IP=192.168.1.5"
+Environment="SOLARMAX_PORT=12345"
 
 [Install]
 WantedBy=multi-user.target

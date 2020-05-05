@@ -14,6 +14,15 @@ namespace EnergySolarLogger
 {
     public class Startup
     {
+        private SolarMaxCollector _solarmaxCollector;
+        private readonly Dictionary<string, string> _queryStringToMeasurementMapping = new Dictionary<string, string>()
+        {
+            { "u", "totalEnergyUsed" },
+            { "p", "totalEnergyProvided" },
+            { "cu", "currentEnergyUsed" },
+            { "cp", "currentEnergyProvided" }
+        };
+
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
@@ -24,6 +33,7 @@ namespace EnergySolarLogger
                 .WriteTo.InfluxDB(Environment.GetEnvironmentVariable("INFLUX_ADDRESS"), Environment.GetEnvironmentVariable("INFLUX_DB"))
                 .CreateCollector();
 
+            _solarmaxCollector = new SolarMaxCollector(Environment.GetEnvironmentVariable("SOLARMAX_IP"), int.Parse(Environment.GetEnvironmentVariable("SOLARMAX_PORT")));
             var timer = new System.Threading.Timer(o => CollectSolarStats(), null, 0, 30000);
         }
 
@@ -31,54 +41,53 @@ namespace EnergySolarLogger
         {
             try
             {
-                var output = new SolarMaxCollector(Environment.GetEnvironmentVariable("SOLARMAX_IP"), int.Parse(Environment.GetEnvironmentVariable("SOLARMAX_PORT"))).SendMessage(new string[] { "PAC", "KDY", "KT0" });
-                Console.WriteLine($"Collected solar stats {string.Join(", ", output)}");
+                Console.WriteLine("Collection solar stats...");
+       
+                var message = new SolarMaxMessage(new string[] { "PAC", "KDY", "KT0" });
+                var response = _solarmaxCollector.SendMessage(message);
 
-                Metrics.Measure("currentSolarProduction", output["PAC"] / 2);
-                Metrics.Measure("todaySolarProduction", output["KDY"]);
-                Metrics.Measure("totalSolarProduction", output["KT0"]);
+                Metrics.Measure("currentSolarProduction", response["PAC"] / 2);
+                Metrics.Measure("todaySolarProduction", response["KDY"]);
+                Metrics.Measure("totalSolarProduction", response["KT0"]);
+
+                Console.WriteLine($"Solar stats collected successfully: {string.Join(", ", response)}");
             }
-            catch
+            catch(Exception ex)
             {
-                Console.WriteLine("Could not collect solar stats");
+                Console.WriteLine($"Could not collect solar stats {ex}");
             }
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
             app.Run(async (context) =>
             {
-                Console.WriteLine(string.Join(", ", context.Request.Query.Select(x => $"{x.Key} : {x.Value.FirstOrDefault()}")));
-
-                if (context.Request.Query.ContainsKey("u") && int.TryParse(context.Request.Query["u"].First(), out int totalEnergyUsed))
+                try
                 {
-                    Metrics.Measure("totalEnergyUsed", totalEnergyUsed);
-                }
-                if (context.Request.Query.ContainsKey("p") && int.TryParse(context.Request.Query["p"].First(), out int totalEnergyProvided))
-                {
-                    Metrics.Measure("totalEnergyProvided", totalEnergyProvided);
-                }
+                    Console.WriteLine("Receiving request...");
+                    Console.WriteLine(string.Join(", ", context.Request.Query.Select(x => $"{x.Key} : {x.Value.FirstOrDefault()}")));
 
-                if (context.Request.Query.ContainsKey("cp") && int.TryParse(context.Request.Query["cp"].First(), out int currentEnergyProvided))
-                {
-                    Metrics.Measure("currentEnergyProvided", currentEnergyProvided);
-                }
+                    foreach(var query in _queryStringToMeasurementMapping)
+                    {
+                        if (context.Request.Query.ContainsKey(query.Key) && int.TryParse(context.Request.Query[query.Key].First(), out int value))
+                        {
+                            Metrics.Measure(query.Value, value);
+                        }
+                    }
 
-                if (context.Request.Query.ContainsKey("cu") && int.TryParse(context.Request.Query["cu"].First(), out int currentEnergyUsed))
-                {
-                    Metrics.Measure("currentEnergyUsed", currentEnergyUsed);
+                    Console.WriteLine("Request processed successfully");
                 }
-
-                context.Response.StatusCode = (int) HttpStatusCode.OK;
-                await context.Response.CompleteAsync();
-                return;
+                catch(Exception ex)
+                {
+                    Console.WriteLine($"Could not process request {ex}");
+                }
+                finally
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.OK;
+                    await context.Response.CompleteAsync();
+                }
             });
-        }         
+        }
     }
 }
