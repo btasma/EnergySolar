@@ -17,6 +17,11 @@ namespace EnergySolarLogger
     {
         private SolarMaxCollector _solarmaxCollector;
         private static Timer _solarStatsTimer;
+
+        private int _lastCurrentEnergyUsed = 0;
+        private int _lastCurrentEnergyProvided = 0;
+        private int _lastCurrentSolarEnergy = 0;
+
         private readonly Dictionary<string, string> _queryStringToMeasurementMapping = new Dictionary<string, string>()
         {
             { "u", "totalEnergyUsed" },
@@ -51,12 +56,18 @@ namespace EnergySolarLogger
                 Metrics.Measure("currentSolarProduction", response["PAC"] / 2);
                 Metrics.Measure("todaySolarProduction", response["KDY"]);
                 Metrics.Measure("totalSolarProduction", response["KT0"]);
+                _lastCurrentSolarEnergy = response["PAC"] / 2;
 
                 Console.WriteLine($"Solar stats collected successfully: {string.Join(", ", response)}");
             }
             catch(Exception ex)
             {
                 Console.WriteLine($"Could not collect solar stats {ex}");
+            }
+            finally
+            {
+                var currentHomeUsage = _lastCurrentEnergyUsed + _lastCurrentSolarEnergy - _lastCurrentEnergyProvided;
+                Metrics.Measure("currentHomeUsage", currentHomeUsage);
             }
         }
 
@@ -75,6 +86,15 @@ namespace EnergySolarLogger
                         if (context.Request.Query.ContainsKey(query.Key) && int.TryParse(context.Request.Query[query.Key].First(), out int value))
                         {
                             Metrics.Measure(query.Value, value);
+
+                            if (query.Key == "cu")
+                            {
+                                _lastCurrentEnergyUsed = value;
+                            }
+                            else if (query.Key == "cp")
+                            {
+                                _lastCurrentEnergyProvided = value;
+                            }
                         }
                     }
 
