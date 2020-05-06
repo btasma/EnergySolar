@@ -48,7 +48,7 @@ namespace EnergySolarLogger
         {
             try
             {
-                _lastCurrentEnergyUsed = 0;
+                _lastCurrentSolarEnergy = 0;
                 Console.WriteLine("Collection solar stats...");
        
                 var message = new SolarMaxMessage(new string[] { "PAC", "KDY", "KT0" });
